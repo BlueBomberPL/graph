@@ -12,8 +12,8 @@
 /* Internal, sorts indexes ascending */
 static int _gph_sort_asc(const void *a, const void *b)
 {
-    uint16_t idxa = *((uint16_t *) a);
-    uint16_t idxb = *((uint16_t *) b);
+    index_t idxa = *((index_t *) a);
+    index_t idxb = *((index_t *) b);
 
     return ((int32_t) idxa) - ((int32_t) idxb);
 }
@@ -21,8 +21,8 @@ static int _gph_sort_asc(const void *a, const void *b)
 /* Internal, sorts indexes descending */
 static int _gph_sort_des(const void *a, const void *b)
 {
-    uint16_t idxa = *((uint16_t *) a);
-    uint16_t idxb = *((uint16_t *) b);
+    index_t idxa = *((index_t *) a);
+    index_t idxb = *((index_t *) b);
 
     return ((int32_t) idxb) - ((int32_t) idxa);
 }
@@ -35,7 +35,7 @@ static int _gph_sort_des(const void *a, const void *b)
  * 
  * Returns NULL if failed.
  */
-vertex_t *gph_new_vtx(uint16_t *conn, uint16_t nconn)
+vertex_t *gph_new_vtx(index_t *conn, index_t nconn)
 {
     vertex_t *v = NULL;
 
@@ -44,7 +44,7 @@ vertex_t *gph_new_vtx(uint16_t *conn, uint16_t nconn)
         return NULL;
 
     /* List alloc */
-    if((v->_arch = (uint16_t *) calloc(1u, sizeof(uint16_t))) == NULL)
+    if((v->_arch = (index_t *) calloc(1u, sizeof(index_t))) == NULL)
     {
         free(v);
         return NULL;
@@ -190,9 +190,14 @@ size_t gph_add(graph_t *graph, vertex_t *copy)
  * 
  * Returns # of deleted vertices or -1 if failed.
  */
-size_t gph_del(graph_t *graph, uint16_t index)
+size_t gph_del(graph_t *graph, index_t index)
 {
     assert(graph);
+
+    if(index == GPH_LAST && graph->_n > 0u)
+        index = graph->_n - 1u;
+    else if(index == GPH_LAST)
+        index = 0u;
 
     /* Validation */
     if(index >= graph->_n)
@@ -235,17 +240,20 @@ size_t gph_del(graph_t *graph, uint16_t index)
  * 
  * Returns # of modified connections or -1 if failed.
  */
-size_t gph_con(graph_t *graph, uint16_t a, uint16_t b, int op)
+size_t gph_con(graph_t *graph, index_t a, index_t b, int op)
 {
     assert(graph && (op == GPH_ADD || op == GPH_DELETE));
 
-    uint16_t *clist = graph->_list[a]->_arch;   /* Alias */
-    uint16_t nclist = graph->_list[a]->_narch;  /* Alias */
-
-    /* ADDING */
+    /* Conversion */
+    if(a == GPH_LAST && graph->_n > 0u)
+        a = graph->_n - 1u;
+    else if(a == GPH_LAST)
+        a = 0u;
     
-    if(op != GPH_ADD)
-        goto DEL;
+    if(b == GPH_LAST && graph->_n > 0u)
+        b = graph->_n - 1u;
+    else if(b == GPH_LAST)
+        b = 0u;
 
     /* Validation */
     if(a >= graph->_n || b >= graph->_n)
@@ -254,20 +262,25 @@ size_t gph_con(graph_t *graph, uint16_t a, uint16_t b, int op)
     if(a == b)
         return 0u;
 
+    /* ADDING */
+    
+    if(op != GPH_ADD)
+        goto DEL;
+
     /* Search for a duplicate */
-    for(size_t i = 0u; i < nclist; ++i)
+    for(size_t i = 0u; i < graph->_list[a]->_narch; ++i)
     {
-        if(clist[i] == b)
+        if(graph->_list[a]->_arch[i] == b)
             return 0u;
     }
 
     /* List realloc */
-    uint16_t *temp = NULL;
-    if((temp = (uint16_t *) realloc(clist, sizeof(uint16_t) * (nclist + 1u))) == NULL)
+    index_t *temp = NULL;
+    if((temp = (index_t *) realloc(graph->_list[a]->_arch, sizeof(index_t) * (graph->_list[a]->_narch + 1u))) == NULL)
         return (size_t) -1;
 
-    clist = temp;
-    clist[nclist] = b;
+    graph->_list[a]->_arch = temp;
+    graph->_list[a]->_arch[graph->_list[a]->_narch] = b;
     ++(graph->_list[a]->_narch);
     
     return 1u;
@@ -278,25 +291,25 @@ size_t gph_con(graph_t *graph, uint16_t a, uint16_t b, int op)
     DEL:;
 
     /* Validation */
-    if(nclist == 0u)
+    if(graph->_list[a]->_narch == 0u)
         return 0u;
 
     /* Looking for the arch */
-    uint16_t arch_idx = 0u;
-    for(; arch_idx < nclist; ++arch_idx)
+    index_t arch_idx = 0u;
+    for(; arch_idx < graph->_list[a]->_narch; ++arch_idx)
     {
-        if(clist[arch_idx] == b)
+        if(graph->_list[a]->_arch[arch_idx] == b)
             break;
         
     }
 
     /* Found? */
-    if(arch_idx == nclist)
+    if(arch_idx == graph->_list[a]->_narch)
         return 0u; /* Nah */
 
     /* Moving to the left */
-    for(uint16_t i = arch_idx; i < nclist - 1u; ++i)
-        clist[i] = clist[i + 1u];
+    for(index_t i = arch_idx; i < graph->_list[a]->_narch - 1u; ++i)
+        graph->_list[a]->_arch[i] = graph->_list[a]->_arch[i + 1u];
 
     (graph->_list[a]->_narch)--;
     return 1u;
@@ -310,9 +323,20 @@ size_t gph_con(graph_t *graph, uint16_t a, uint16_t b, int op)
  * 
  * Returns appropiate type (GPH_NONE/ONEWAY/TWOWAY) or -1 if failed. 
  */
-int gph_typ(const graph_t *graph, uint16_t a, uint16_t b)
+int gph_typ(const graph_t *graph, index_t a, index_t b)
 {
     assert(graph);
+
+    /* Conversion */
+    if(a == GPH_LAST && graph->_n > 0u)
+        a = graph->_n - 1u;
+    else if(a == GPH_LAST)
+        a = 0u;
+    
+    if(b == GPH_LAST && graph->_n > 0u)
+        b = graph->_n - 1u;
+    else if(b == GPH_LAST)
+        b = 0u;
 
     /* Validation */
     if(a >= graph->_n || b >= graph->_n)
@@ -321,7 +345,7 @@ int gph_typ(const graph_t *graph, uint16_t a, uint16_t b)
     int type = GPH_NONE;
 
     /* Searching A -> B */
-    for(uint16_t i = 0u; i < graph->_list[a]->_narch; ++i)
+    for(index_t i = 0u; i < graph->_list[a]->_narch; ++i)
     {
         if(graph->_list[a]->_arch[i] == b)
         {
@@ -332,9 +356,9 @@ int gph_typ(const graph_t *graph, uint16_t a, uint16_t b)
     }
 
     /* Searching B -> A */
-    for(uint16_t i = 0u; i < graph->_list[b]->_narch; ++i)
+    for(index_t i = 0u; i < graph->_list[b]->_narch; ++i)
     {
-        if(graph->_list[b]->_arch[i] == a)
+        if(graph->_list[b]->_arch[i] == a && type == GPH_ONEWAY)
         {
             /* Found */
             ++type;
@@ -355,59 +379,81 @@ void gph_out(const graph_t *graph, FILE *stream, int settings)
 {
     assert(graph && stream && stream != stdin);
 
+    /* If size == 0 */
+    if(graph->_n == 0u)
+    {
+        fprintf(stream, "\tEmpty.\n");
+        return;
+    }
+
     for(size_t i = 0u; i < graph->_n; ++i)
     {
-        uint16_t *clist = graph->_list[i]->_arch;   /* Alias */
-        uint16_t nclist = graph->_list[i]->_narch;  /* Alias */
-
         /* GPH_SET_SORT_ASC */
         if(settings & GPH_SET_SORT_ASC)
-            qsort(clist, nclist, sizeof(uint16_t), _gph_sort_asc);
+            qsort(graph->_list[i]->_arch, graph->_list[i]->_narch, sizeof(index_t), _gph_sort_asc);
 
         /* GPH_SET_SORT_DES */
         else if(settings & GPH_SET_SORT_DES)
-            qsort(clist, nclist, sizeof(uint16_t), _gph_sort_des);
+            qsort(graph->_list[i]->_arch, graph->_list[i]->_narch, sizeof(index_t), _gph_sort_des);
 
 
-        fprintf(stream, "%6zu: [", i);
+        fprintf(stream, "%32zu: [", i);
 
-        for(size_t j = 0u; j < nclist; ++j)
+        for(size_t j = 0u; j < graph->_list[i]->_narch; ++j)
         {
             /* GPH_SET_MARK_DUAL */
             if(settings & GPH_SET_MARK_DUAL && (stream == stdout || stream == stderr))
             {
-                if(gph_typ(graph, i, clist[j]) == GPH_TWOWAY)
+                if(gph_typ(graph, i, graph->_list[i]->_arch[j]) == GPH_TWOWAY)
                     col_set(MAGENTA);
             }
             
-            fprintf(stream, "%u", clist[j]);
+            fprintf(stream, "%hu", graph->_list[i]->_arch[j]);
 
             if(settings & GPH_SET_MARK_DUAL && (stream == stdout || stream == stderr))
                 col_set(COLOR_DEFAULT);
 
-            if(j < nclist - 1u)
+            if(j < graph->_list[i]->_narch - 1u)
                 fprintf(stream, ", ");
         }
-        fprintf(stream, "]\n");
+        fprintf(stream, "]\t");
+
+        if((i + 1u) % GLO_PRINT_LINE_NUM == 0 || i == graph->_n - 1u)
+            fprintf(stream, "\n");
+        else
+        {
+            char buf[GLO_MAX_MSG_OUTPUT] = {0, };
+            snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "%%%u%s", (i + 1u) * GLO_PRINT_ALIGMENT, "");
+            fprintf(stream, buf);
+        }
     }
 }
 
-/* Counts total # of arches (1-way and dual) 
+/* Gives statistics
  *
  *  graph       - the graph to be analysed 
  *  o_single    - OUT, # of 1-way arches 
  *  o_double    - OUT, # of 2-way arches 
+ *  o_isolated  - OUT, # of isolated vertices
  */
-void gph_cnt(const graph_t *graph, size_t *o_single, size_t *o_double)
+void gph_cnt(const graph_t *graph, size_t *o_single, size_t *o_double, size_t *o_isolated)
 {
-    assert(graph && o_single && o_double);
+    assert(graph && o_single && o_double && o_isolated);
 
     *o_single = 0u;
     *o_double = 0u;
+    *o_isolated = 0u;
 
     /* For each vertex */
     for(size_t i = 0u; i < graph->_n; ++i)
     {
+        /* If isolated */
+        if(graph->_list[i]->_narch == 0u)
+        {
+            ++(*o_isolated);
+            continue;
+        }
+
         /* For each arch */
         for(size_t j = 0u; j < graph->_list[i]->_narch; ++j)
         {

@@ -17,12 +17,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "global.h"
 #include "terminal.h"
 
 #define GPH_ADD                 (0x01)          /* ADD operation (on arch) */
 #define GPH_DELETE              (0x02)          /* DELETE operation (on arch) */
 
-#define GPH_LAST                ((uint16_t) -1) /* Last index of a graph */
+#define GPH_LAST                ((index_t) -1) /* Last index of a graph */
 
 #define GPH_NONE                (0x00)          /* No arch */
 #define GPH_ONEWAY              (0x01)          /* One way arch (A -> B) XOR (B -> A) */
@@ -33,11 +34,14 @@
 #define GPH_SET_SORT_DES        (1 << 2)        /* PRINT: Sorts arches for each vertex (descending) */
 
 
+/* An index */
+typedef uint16_t index_t;
+
 /* A vertex */
 typedef struct _gph_vertx_t
 {
-    uint16_t   *_arch;          /* List of arches coming from this vertex */
-    uint16_t    _narch;         /* The list length */
+    index_t   *_arch;          /* List of arches coming from this vertex */
+    index_t   _narch;         /* The list length */
 
 } vertex_t;
 
@@ -59,7 +63,7 @@ typedef struct _gph_graph_t
  * 
  * Returns NULL if failed.
  */
-vertex_t       *gph_new_vtx(uint16_t *conn, uint16_t nconn);
+vertex_t       *gph_new_vtx(index_t *conn, index_t nconn);
 
 /* Allocates memory for new, empty graph.
  *
@@ -92,7 +96,7 @@ size_t          gph_add(graph_t *graph, vertex_t *copy);
  * 
  * Returns # of deleted vertices or -1 if failed.
  */
-size_t          gph_del(graph_t *graph, uint16_t index);
+size_t          gph_del(graph_t *graph, index_t index);
 
 /* Modifies arch from vertex A to vertex B (A -> B).
  *
@@ -103,7 +107,7 @@ size_t          gph_del(graph_t *graph, uint16_t index);
  * 
  * Returns # of modified connections or -1 if failed.
  */
-size_t          gph_con(graph_t *graph, uint16_t a, uint16_t b, int op);
+size_t          gph_con(graph_t *graph, index_t a, index_t b, int op);
 
 /* Indicates the type of arch between A and B.
  *
@@ -113,7 +117,7 @@ size_t          gph_con(graph_t *graph, uint16_t a, uint16_t b, int op);
  * 
  * Returns appropiate type (GPH_NONE/ONEWAY/TWOWAY) or -1 if failed. 
  */
-int             gph_typ(const graph_t *graph, uint16_t a, uint16_t b);
+int             gph_typ(const graph_t *graph, index_t a, index_t b);
 
 /* Prints graph, line by line.
  *
@@ -123,12 +127,13 @@ int             gph_typ(const graph_t *graph, uint16_t a, uint16_t b);
  */
 void            gph_out(const graph_t *graph, FILE *stream, int settings);
 
-/* Counts total # of arches (1-way and dual) 
+/* Gives statistics
  *
  *  graph       - the graph to be analysed 
  *  o_single    - OUT, # of 1-way arches 
  *  o_double    - OUT, # of 2-way arches 
+ *  o_isolated  - OUT, # of isolated vertices
  */
-void            gph_cnt(const graph_t *graph, size_t *o_single, size_t *o_double);
+void            gph_cnt(const graph_t *graph, size_t *o_single, size_t *o_double, size_t *o_isolated);
 
 #endif /* _GRAPH_GRAPH_H_FILE_ */

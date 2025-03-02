@@ -1,0 +1,9 @@
+TODO
+
+Naprawić działanie "del", aby obsługiwać wiele wierzchołków
+
+Naprawić crash przy wywołaniu "set last: ..."
+
+Dodać odpowiednie formatowanie do wydruku grafu (odstępy)
+
+Zaimplementować generowanie z użyciem chatbota
