@@ -6,10 +6,10 @@ SRC 	:= $(wildcard *.c)
 FLAGS	:= -O2 -std=c11 -Wall
 OUT		:= graph
 
-# Default: Linux build 
+# Default: Linux build
 main:
-	gcc $(SRC) $(FLAGS) -o bin/$(OUT).out"
+	gcc $(SRC) $(FLAGS) -o bin/$(OUT).out
 
 # Windows build:
 win:
-	gcc $(SRC) $(FLAGS) -o bin/$(OUT).exe"
+	gcc $(SRC) $(FLAGS) -o bin/$(OUT).exe
