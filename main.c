@@ -5,6 +5,7 @@
 #include "graph.h"
 #include "misc.h"
 #include "terminal.h"
+#include "ai.h"
 
 /* GLOBAL GRAPH */
 static graph_t *g_graph = NULL;
@@ -64,7 +65,7 @@ void *_command_add(char **argv, int argc)
             gph_del(g_graph, GPH_LAST);
             return NULL;
         }
-        
+
         added += temp;
     }
 
@@ -216,7 +217,7 @@ void *_command_del(char **argv, int argc)
 
         deleted += result;
     }
-    
+
     /* Printing info */
     {
         char buf[GLO_MAX_MSG_OUTPUT];
@@ -248,10 +249,10 @@ void *_command_find(char **argv, int argc)
         return NULL;
     }
 
-    
+
     index_t a = 0u, b = 0u;
     int result = 0;
-    
+
     /* 1st param */
     if(strcmp(argv[0u], "last") == 0)
         a = GPH_LAST;
@@ -312,7 +313,7 @@ void *_command_find(char **argv, int argc)
         }
     }
 
-    return NULL;  
+    return NULL;
 }
 
 /* CMD: For "help" command */
@@ -349,7 +350,7 @@ void *_command_list(char **argv, int argc)
     {
         if(strcmp(argv[i], "-t") == 0)
             settings |= FLAG_TELL;
-        
+
         /* Wrong flag */
         else
         {
@@ -385,7 +386,7 @@ void *_command_new(char **argv, int argc)
     {
         if(strcmp(argv[i], "-f") == 0)
             settings |= FLAG_FORCE;
-        
+
         /* Wrong flag */
         else
         {
@@ -410,9 +411,9 @@ void *_command_new(char **argv, int argc)
 
             c = getchar();
             fflush(stdin);
-            
+
         } while (tolower(c) != 'y' && tolower(c) != 'n');
-        
+
         if(tolower(c) == 'y')
             /* OK */;
         else
@@ -531,7 +532,7 @@ void *_command_set(char **argv, int argc)
 
         else if(sscanf(argv[i], "%hu", &arch) < 1)
         {
-            msc_err("Expected positive integer or \'last\'."); 
+            msc_err("Expected positive integer or \'last\'.");
             return NULL;
         }
 
@@ -542,7 +543,7 @@ void *_command_set(char **argv, int argc)
             exit(EXIT_FAILURE);
         }
 
-        added += result;  
+        added += result;
     }
 
     /* Printing info (success) */
@@ -572,7 +573,7 @@ void *_command_size(char **argv, int argc)
     size_t n = 0u;
     if(sscanf(argv[0u], "%zu", &n) < 1)
     {
-        msc_err("Expected positive integer."); 
+        msc_err("Expected positive integer.");
         return NULL;
     }
 
@@ -582,7 +583,7 @@ void *_command_size(char **argv, int argc)
     {
         if(strcmp(argv[i], "-f") == 0)
             settings |= FLAG_FORCE;
-        
+
         /* Wrong flag */
         else
         {
@@ -620,9 +621,9 @@ void *_command_size(char **argv, int argc)
 
                 c = getchar();
                 fflush(stdin);
-            
+
             } while (tolower(c) != 'y' && tolower(c) != 'n');
-        
+
             if(tolower(c) == 'y')
                 /* OK */;
             else
@@ -705,10 +706,10 @@ int main(int argc, char **argv)
     r += gph_add(g_graph, NULL);
     r += gph_add(g_graph, NULL);
 
-    r += gph_con(g_graph, 0, 1, GPH_ADD); 
-    r += gph_con(g_graph, 1, 2, GPH_ADD); 
-    r += gph_con(g_graph, 2, 3, GPH_ADD); 
-    r += gph_con(g_graph, 3, 4, GPH_ADD); 
+    r += gph_con(g_graph, 0, 1, GPH_ADD);
+    r += gph_con(g_graph, 1, 2, GPH_ADD);
+    r += gph_con(g_graph, 2, 3, GPH_ADD);
+    r += gph_con(g_graph, 3, 4, GPH_ADD);
 
     gph_out(g_graph, stdout, 0);
     printf("%zu\n", r);
@@ -738,6 +739,8 @@ int main(int argc, char **argv)
     cmd_add("set",      _command_set);
     cmd_add("size",     _command_size);
     cmd_add("tell",     _command_tell);
+    cmd_add("ai",       _command_ai);
+    cmd_add("aitest",   _command_ai_test);
 
     /* Input loop */
     while(1)
@@ -774,6 +777,6 @@ int main(int argc, char **argv)
     }
 
 #endif
-    
+
     return EXIT_SUCCESS;
 }
