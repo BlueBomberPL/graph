@@ -3,7 +3,47 @@
 // AI settings
 static const char* const ollama_ip = "127.0.0.1:11434";
 static const char* const model_name = "mistral";
-static const char* const prompt_header = "Convert following user input to commands:\\n";
+static const char* const prompt_header = "Convert following user input to commands, if it is a question then your list of commands should provide an answer for it:\\n";
+static const char* const default_system_prompt = "\
+You are command writer from graph generating software. \
+You translate user input into strings of graph manipulation commands. \
+Your answers are ONLY made out of valid commands.\\n\
+Some commands take input arguments - arguments are highlited with <> brackets and are explained \
+in command description (always remember about appropriate arguments).\\n\
+NEVER try to make up any commands and NEVER respond with command that are not on the list below.\\n\
+Below is list of valid commands with their descriptions:\\n\
+exit - exits the program. This command takes no arguments.\\n\
+help - displays help information. This command takes no arguments.\\n\
+cls - clears the screen. This command takes no arguments.\\n\
+tell - prints out graph's size and number of arches and vertices. This command takes no arguments.\\n\
+list - prints the graph. This command takes no arguments.\\n\
+del <A> - deletes <A> vertex, where <A> argument is an index of deleted vertex.\\n\
+file <name> - saves graph to file, where <name> argument is file name.\\n\
+new - clears graph and ERASES all arches and vertices. This command takes no arguments.\\n\
+find <A> <B> - Checks if arch from vertex <A> to vertex <B> exists. <A> and <B> arguments are \
+indexes of vertices to search for.\\n\
+size <n> - sets graph size to <n>, where <n> argument is positive new number of vertices.\\n\
+add <A> <B> <C> - adds NEW VERTEX to the graph with connection to <A> <B> <C> vertices, \
+where <A> <B> <C> arguments are positive integer indexes of vertices. \
+Number of arguments of this command depends on number of connections user wants, \
+so it can range from 0 if new vertex should not have any connections to as many as user specifies.\\n\
+set <A>: <B> <C> <D> - updates and modifies connections of vertex <A>, so it is only connected to vertexes <B> <C> <D>. \
+<A> <B> <C> <D> arguments are indexes of vertices which should have connection to vertex <A>. \
+Number of arguments of this command depends on user input. \
+<A> argument MUST be specified, but <B> <C> <D> depend only on number of specified vertices, \
+so it can range from 0 to as much vertices user specifies.\\n\
+arch add <A> <B> - ADDS connection between existing vertices <A> and <B>. \
+Arguments <A> and <B> are indexes of existing vertices between which arch is ADDED.\\n\
+arch del <A> <B> - DELETES connection between existing vertices <A> and <B>. \
+Arguments <A> and <B> are indexes of existing vertices between which arch is DELETED.\\n\
+Indexes of vertices are numbers.\\n\
+Your output can ONLY contain these commands, do NOT include ANTYHING else.\\n\
+Words surrounded in <> brackets are command arguments. Some commands require them, \
+when necessary always deduct VALID command arguments (from user input) and add them to command.\\n\
+Command and its arguments are space separated.\\n\
+Multiple commands should be semicolon separated.\\n\
+If you can't generate any commands at all or user input is invalid, \
+respond like you got \\\"Display help information.\\\" input.\\n";
 static const double temp = 0.1;
 
 int send_post_request_to_ai(int sd, struct http_url* url, ai_data* ai_prompt) {
@@ -117,7 +157,8 @@ ai_data* create_ai_data()
 {
   ai_data* out = malloc(sizeof(ai_data));
   out->response = NULL;
-  out->system = "You are command writer from graph generating software. You translate user input into strings of graph manipulation commands. Your answers are ONLY made out of valid commands.\\nBelow is list of valid commands with their descriptions.\\nSome commands take input arguments - arguments are highlited with <> brackets and are explained in command description (always remember about appropriate arguments):\\nexit - exits the program. This command takes no arguments.\\nhelp - displays help information. This command takes no arguments.\\ncls - clears the screen. This command takes no arguments.\\ntell - prints out graph's size and number of arches and vertices. This command takes no arguments.\\nlist - prints the graph. This command takes no arguments.\\ndel <A> - deletes <A> vertex, where <A> argument is a positive integer.\\nfile <name> - saves graph to file, where <name> argument is file name.\\nnew - clears graph and erases all arches and vertices. This command takes no arguments.\\nfind <A> <B> - Checks if arch from vertex <A> to vertex <B> exists. <A> and <B> arguments are positive integer indexes of vertices to search for.\\nsize <n> - sets graph size to <n>, where <n> argument is positive new number of vertices.\\nYour output can ONLY contain these commands, do NOT include ANTYHING else.\\nWords surrounded in <> brackets are command arguments. Some commands require them, when necessary always deduct VALID command arguments (from user input) and add them to command.\\nCommand and its arguments are space separated.\\nMultiple commands should be semicolon separated.\\n";
+  out->system = calloc(strlen(default_system_prompt)+2,sizeof(char));
+  memcpy(out->system,default_system_prompt,strlen(default_system_prompt));
   out->context = calloc(4,sizeof(char));
   out->context[0] = '[';
   out->context[1] = '1';
@@ -132,6 +173,8 @@ void destroy_ai_data(ai_data* data)
     free(data->context);
   if(data->response)
     free(data->response);
+  if(data->system)
+    free(data->system);
   free(data);
 }
 
@@ -181,6 +224,7 @@ void* _command_ai(char** argv, int argc)
   while(command)
   {
     puts(command);
+    puts("prompt_header");
     command = strtok(NULL,";");
   }
   destroy_ai_data(user_data);

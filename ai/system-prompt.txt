@@ -6,7 +6,7 @@ help - displays help information. This command takes no arguments.
 cls - clears the screen. This command takes no arguments.
 tell - prints out graph's size and number of arches and vertices. This command takes no arguments.
 list - prints the graph. This command takes no arguments.
-del <A> - deletes <A> vertex, where <A> argument is a positive integer.
+del <A> - deletes <A> vertex, where <A> argument is a index of deleted vertex.
 file <name> - saves graph to file, where <name> argument is file name.
 new - clears graph and erases all arches and vertices. This command takes no arguments.
 find <A> <B> - Checks if arch from vertex <A> to vertex <B> exists. <A> and <B> arguments are positive integer indexes of vertices to search for.
