@@ -224,7 +224,6 @@ void* _command_ai(char** argv, int argc)
   while(command)
   {
     puts(command);
-    puts("prompt_header");
     command = strtok(NULL,";");
   }
   destroy_ai_data(user_data);
