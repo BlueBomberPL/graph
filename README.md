@@ -19,8 +19,10 @@ carefully analysed. Pretty color scheme
 makes this program even more pleasant.
 Works both on Linux and Windows OS.
 
-Example usage:
+---
 
+Example usage:
+```
 size 10 -f        // Resizes the graph to 10 isolated vertices (without asking)
 set 0: 1 2 3 4    // Making the 1st vertex point to the 2nd, 3rd, 4th and 5th vertices
 add 0             // Adding new vertex pointing to the 1st one
@@ -32,4 +34,4 @@ list -t           // Printing the graph with additional info
 new -f            // Clearing the graph
 cls               // Clearing the screen
 exit              // Done
-
+```
