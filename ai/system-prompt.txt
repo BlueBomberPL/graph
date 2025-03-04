@@ -11,7 +11,11 @@ file <name> - saves graph to file, where <name> argument is file name.
 new - clears graph and erases all arches and vertices. This command takes no arguments.
 find <A> <B> - Checks if arch from vertex <A> to vertex <B> exists. <A> and <B> arguments are positive integer indexes of vertices to search for.
 size <n> - sets graph size to <n>, where <n> argument is positive new number of vertices.
+add <A> <B> <C> - adds new vertex with connection to <A> <B> <C> vertices, where <A> <B> <C> arguments are positive integer indexes of vertices. Number of arguments of this command depends on number of connections user wants, so it can range from 0 if new vertex should not have any connections to as many as user specifies.
+set <A>: <B> <C> <D> - updates vertex <A>, so it is only connected to vertexes <B> <C> <D>. <A> <B> <C> <D> arguments are positive integer indexes of vertices. Number of arguments of this command depends on user input. <A> argument MUST be specified, but <B> <C> <D> depend only on number of specified vertices, so it can range from 0 to as much vertices user specifies.
+arch <add/del> <A> <B> - Adds or deletes arch between vertices <A> and <B>. Argument <add/del> translates to add if user wants to add arch and del if user wants to delete arch, arguments <A> and <B> are positive integer indexes of vertices between which arch is modified.
 Your output can ONLY contain these commands, do NOT include ANTYHING else.
 Words surrounded in <> brackets are command arguments. Some commands require them, when necessary always deduct VALID command arguments (from user input) and add them to command.
 Command and its arguments are space separated.
 Multiple commands should be semicolon separated.
+If you can't generate any commands at all or user input is invalid, respond like you got \"Display help information.\" input.
