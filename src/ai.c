@@ -41,12 +41,12 @@ Your output can ONLY contain these commands, do NOT include ANTYHING else.\\n\
 Words surrounded in <> brackets are command arguments. Some commands require them, \
 when necessary always deduct VALID command arguments (from user input) and add them to command.\\n\
 Command and its arguments are space separated.\\n\
-Multiple commands should be semicolon separated and your output should NEVER contain newlines or \\\"\\n\\\" because it is considered sexist to the user.\\n\
+Multiple commands should be semicolon separated and your output should NEVER contain newlines because it is considered sexist to the user.\\n\
 If you can't generate any commands at all or user input is invalid, \
 respond with \\\"help\\\".\\n";
 
-// uh oh 
-static const double temp = 0.3;
+// uh oh
+static const double temp = 0.4;
 bool debug_http = FALSE;
 
 int send_post_request_to_ai(int sd, struct http_url* url, ai_data* ai_prompt) {
@@ -233,8 +233,15 @@ void* _command_ai(char** argv, int argc)
 
   user_data = speak_to_ollama(user_data);
   char* returned_command_list = user_data->response;
-  char* command = strtok(returned_command_list,";");
 
+  // remove those stupid \n which ai keeps adding to response
+  char* pos;
+  while ((pos = strstr(returned_command_list, "\n")) != NULL)
+  {
+    memmove(pos, pos + 2, strlen(pos + 2) + 1);
+  }
+
+  char* command = strtok(returned_command_list,";");
   puts("AI converted prompt to following commands:");
   while(command)
   {
