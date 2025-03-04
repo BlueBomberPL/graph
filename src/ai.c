@@ -1,9 +1,10 @@
 #include "ai.h"
 
-// to change ???
-static char ollama_ip[] = "127.0.0.1:11434";
-static char* model_name = "mistral";
-static double temp = 0.1;
+// AI settings
+static const char* const ollama_ip = "127.0.0.1:11434";
+static const char* const model_name = "mistral";
+static const char* const prompt_header = "Convert following user input to commands:\\n";
+static const double temp = 0.1;
 
 int send_post_request_to_ai(int sd, struct http_url* url, ai_data* ai_prompt) {
   size_t json_length = strlen(ai_prompt->prompt)+strlen(ai_prompt->context)+strlen(ai_prompt->system)+256;
@@ -71,7 +72,6 @@ ai_data* speak_to_ollama(ai_data* ai_prompt)
   while (http_response(socket, &msg) > 0)
       if (msg.content)
       {
-        char* saved_response = NULL;
         char* new_context = strstr(msg.content, "\"context\":");
         new_context += 10;
         int new_context_length = strcspn(new_context,"]") + 1;
@@ -117,7 +117,7 @@ ai_data* create_ai_data()
 {
   ai_data* out = malloc(sizeof(ai_data));
   out->response = NULL;
-  out->system = "You are command writer from graph generating software. You translate user input into strings of graph manipulation commands. Your answers are ONLY made out of valid commands. Below is list of valid commands with their descriptions:\\nexit - exits the program\\nhelp - displays help information\\ncls - clears the screen\\ntell - prints out information about graph.\\nYour output can ONLY contain these commands, do NOT include ANTYHING else. Multiple commands should be semicolon separated.";
+  out->system = "You are command writer from graph generating software. You translate user input into strings of graph manipulation commands. Your answers are ONLY made out of valid commands.\\nBelow is list of valid commands with their descriptions.\\nSome commands take input arguments - arguments are highlited with <> brackets and are explained in command description (always remember about appropriate arguments):\\nexit - exits the program. This command takes no arguments.\\nhelp - displays help information. This command takes no arguments.\\ncls - clears the screen. This command takes no arguments.\\ntell - prints out graph's size and number of arches and vertices. This command takes no arguments.\\nlist - prints the graph. This command takes no arguments.\\ndel <A> - deletes <A> vertex, where <A> argument is a positive integer.\\nfile <name> - saves graph to file, where <name> argument is file name.\\nnew - clears graph and erases all arches and vertices. This command takes no arguments.\\nfind <A> <B> - Checks if arch from vertex <A> to vertex <B> exists. <A> and <B> arguments are positive integer indexes of vertices to search for.\\nsize <n> - sets graph size to <n>, where <n> argument is positive new number of vertices.\\nYour output can ONLY contain these commands, do NOT include ANTYHING else.\\nWords surrounded in <> brackets are command arguments. Some commands require them, when necessary always deduct VALID command arguments (from user input) and add them to command.\\nCommand and its arguments are space separated.\\nMultiple commands should be semicolon separated.\\n";
   out->context = calloc(4,sizeof(char));
   out->context[0] = '[';
   out->context[1] = '1';
@@ -150,7 +150,40 @@ void* _command_ai_test(char** argv, int argc)
 
 void* _command_ai(char** argv, int argc)
 {
-  puts("Nothing yet");
+  size_t user_input_pointer = 0;
+  size_t user_input_length = 12;
+  char* user_input = calloc(user_input_length,sizeof(char));
+  puts("Please enter prompt for AI:");
+  char input = '0';
+  fflush(stdin);
+  while(input != '\n')
+  {
+    input = getc(stdin);
+    if((user_input_pointer+1) == user_input_length)
+    {
+      user_input_length *= 2;
+      user_input = realloc(user_input,sizeof(char)*user_input_length);
+    }
+    if(input != '\n')
+      user_input[user_input_pointer] = input;
+    // printf("%i %c %i")
+    user_input_pointer++;
+  }
+  ai_data* user_data = create_ai_data();
+  user_data->prompt = calloc(strlen(prompt_header)+strlen(user_input)+1,sizeof(char));
+  memcpy(user_data->prompt,prompt_header,strlen(prompt_header));
+  strcat(user_data->prompt,user_input);
+  free(user_input);
+  user_data = speak_to_ollama(user_data);
+  char* returned_command_list = user_data->response;
+  char* command = strtok(returned_command_list,";");
+  puts("AI converted prompt to following commands:");
+  while(command)
+  {
+    puts(command);
+    command = strtok(NULL,";");
+  }
+  destroy_ai_data(user_data);
   return NULL;
 }
 
