@@ -3,11 +3,11 @@
 // AI settings
 static const char* const ollama_ip = "127.0.0.1:11434";
 static const char* const model_name = "mistral";
-static const char* const prompt_header = "Convert following user input to commands, if it is a question then your list of commands should provide an answer for it:\\n";
+static const char* const prompt_header = "Convert following user input to commands (do not shorten your output), if it is a question then your list of commands should provide an answer for it:\\n";
 static const char* const default_system_prompt = "\
 You are command writer from graph generating software. \
 You translate user input into strings of graph manipulation commands. \
-Your answers are ONLY made out of valid commands.\\n\
+Your answers are ONLY made out of full valid commands. DO NOT shorten your output.\\n\
 Some commands take input arguments - arguments are highlited with <> brackets and are explained \
 in command description (always remember about appropriate arguments).\\n\
 NEVER try to make up any commands and NEVER respond with command that are not on the list below.\\n\
@@ -32,22 +32,25 @@ set <A>: <B> <C> <D> - updates and modifies connections of vertex <A>, so it is 
 Number of arguments of this command depends on user input. \
 <A> argument MUST be specified, but <B> <C> <D> depend only on number of specified vertices, \
 so it can range from 0 to as much vertices user specifies.\\n\
-arch add <A> <B> - ADDS CONNECTION between existing vertices <A> and <B>. \
+arch add <A> <B> - adds new CONNECTION/ARCH between existing vertices <A> and <B>. \
 Arguments <A> and <B> are indexes of existing vertices between which arch is ADDED.\\n\
-arch del <A> <B> - DELETES CONNECTION between existing vertices <A> and <B>. \
+arch del <A> <B> - DELETES CONNECTION/ARCH between existing vertices <A> and <B>. \
 Arguments <A> and <B> are indexes of existing vertices between which arch is DELETED.\\n\
 Indexes of vertices are numbers.\\n\
 Your output can ONLY contain these commands, do NOT include ANTYHING else.\\n\
 Words surrounded in <> brackets are command arguments. Some commands require them, \
 when necessary always deduct VALID command arguments (from user input) and add them to command.\\n\
 Command and its arguments are space separated.\\n\
-Multiple commands should be semicolon separated.\\n\
+Multiple commands should be semicolon separated and your output should NEVER contain newlines or \\\"\\n\\\" because it is considered sexist to the user.\\n\
 If you can't generate any commands at all or user input is invalid, \
-respond like you got \\\"Display help information.\\\" input.\\n";
-static const double temp = 0.8;
+respond with \\\"help\\\".\\n";
+
+// uh oh 
+static const double temp = 0.3;
+bool debug_http = FALSE;
 
 int send_post_request_to_ai(int sd, struct http_url* url, ai_data* ai_prompt) {
-  size_t json_length = strlen(ai_prompt->prompt)+strlen(ai_prompt->context)+strlen(ai_prompt->system)+256;
+  size_t json_length = strlen(ai_prompt->prompt)+strlen(ai_prompt->context)+strlen(ai_prompt->system)+512;
   size_t buf_length = json_length + 500;
   char* json = calloc(json_length,sizeof(char));
   char* buf = calloc(buf_length, sizeof(char));
@@ -62,7 +65,9 @@ int send_post_request_to_ai(int sd, struct http_url* url, ai_data* ai_prompt) {
     \"stream\": false,\r\n\
     \"options\": {\r\n\
      \"num_thread\": 4,\r\n\
-     \"temperature\": %f\r\n\
+     \"temperature\": %f,\r\n\
+     \"mirostat\": 2,\r\n\
+     \"mirostat_tau\": 6.0\r\n\
    }\r\n\
   }\r\n\
   ", model_name, ai_prompt->prompt, ai_prompt->context, ai_prompt->system, temp);
@@ -80,7 +85,8 @@ Content-Type: application/x-www-form-urlencoded\r\n\
 \r\n\
 ", ollama_ip, strlen(json), json);
 
-  puts(buf);
+  if(debug_http)
+    puts(buf);
 
 	if (http_send(sd, buf)) {
 		perror("http_send");
@@ -184,20 +190,17 @@ void* _command_ai_test(char** argv, int argc)
   if(!check_if_ollama_exists())
     return NULL;
   puts("Testing AI:");
-  ai_data* test_data = create_ai_data();
-  test_data->prompt = "Translate this string to valid list of commands:\\nPlease display graph information and then exit the program.";
-  test_data = speak_to_ollama(test_data);
-  puts(test_data->response);
-  destroy_ai_data(test_data);
-  return NULL;
+  debug_http = TRUE;
+  void* out = _command_ai(argv,argc);
+  debug_http = FALSE;
+  return out;
 }
 
-void* _command_ai(char** argv, int argc)
+char* get_infinite_user_input()
 {
   size_t user_input_pointer = 0;
   size_t user_input_length = 12;
   char* user_input = calloc(user_input_length,sizeof(char));
-  puts("Please enter prompt for AI:");
   char input = '0';
   fflush(stdin);
   while(input != '\n')
@@ -210,17 +213,28 @@ void* _command_ai(char** argv, int argc)
     }
     if(input != '\n')
       user_input[user_input_pointer] = input;
-    // printf("%i %c %i")
     user_input_pointer++;
   }
+  return user_input;
+}
+
+void* _command_ai(char** argv, int argc)
+{
+
+  puts("Please enter prompt for AI:");
+  char* user_input = get_infinite_user_input();
   ai_data* user_data = create_ai_data();
+
+
   user_data->prompt = calloc(strlen(prompt_header)+strlen(user_input)+1,sizeof(char));
   memcpy(user_data->prompt,prompt_header,strlen(prompt_header));
   strcat(user_data->prompt,user_input);
   free(user_input);
+
   user_data = speak_to_ollama(user_data);
   char* returned_command_list = user_data->response;
   char* command = strtok(returned_command_list,";");
+
   puts("AI converted prompt to following commands:");
   while(command)
   {
@@ -228,6 +242,7 @@ void* _command_ai(char** argv, int argc)
     command = strtok(NULL,";");
   }
   destroy_ai_data(user_data);
+
   return NULL;
 }
 
