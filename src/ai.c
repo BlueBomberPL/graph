@@ -23,18 +23,18 @@ new - clears graph and ERASES all arches and vertices. This command takes no arg
 find <A> <B> - Checks if arch from vertex <A> to vertex <B> exists. <A> and <B> arguments are \
 indexes of vertices to search for.\\n\
 size <n> - sets graph size to <n>, where <n> argument is positive new number of vertices.\\n\
-add <A> <B> <C> - adds NEW VERTEX to the graph with connection to <A> <B> <C> vertices, \
-where <A> <B> <C> arguments are positive integer indexes of vertices. \
+add <A> <B> <C> - adds NEW VERTEX to the graph with connections to vertices <A> <B> <C>, \
+where <A> <B> <C> arguments are indexes of vertices to which new vertex is connected, \
 Number of arguments of this command depends on number of connections user wants, \
-so it can range from 0 if new vertex should not have any connections to as many as user specifies.\\n\
+so it can range from 0 if new vertex should not have any connections to as many as user specifies. Arguments for this command DO NOT contain index of newly added vertex, DO NOT add it to argument list.\\n\
 set <A>: <B> <C> <D> - updates and modifies connections of vertex <A>, so it is only connected to vertexes <B> <C> <D>. \
 <A> <B> <C> <D> arguments are indexes of vertices which should have connection to vertex <A>. \
 Number of arguments of this command depends on user input. \
 <A> argument MUST be specified, but <B> <C> <D> depend only on number of specified vertices, \
 so it can range from 0 to as much vertices user specifies.\\n\
-arch add <A> <B> - ADDS connection between existing vertices <A> and <B>. \
+arch add <A> <B> - ADDS CONNECTION between existing vertices <A> and <B>. \
 Arguments <A> and <B> are indexes of existing vertices between which arch is ADDED.\\n\
-arch del <A> <B> - DELETES connection between existing vertices <A> and <B>. \
+arch del <A> <B> - DELETES CONNECTION between existing vertices <A> and <B>. \
 Arguments <A> and <B> are indexes of existing vertices between which arch is DELETED.\\n\
 Indexes of vertices are numbers.\\n\
 Your output can ONLY contain these commands, do NOT include ANTYHING else.\\n\
@@ -44,7 +44,7 @@ Command and its arguments are space separated.\\n\
 Multiple commands should be semicolon separated.\\n\
 If you can't generate any commands at all or user input is invalid, \
 respond like you got \\\"Display help information.\\\" input.\\n";
-static const double temp = 0.1;
+static const double temp = 0.8;
 
 int send_post_request_to_ai(int sd, struct http_url* url, ai_data* ai_prompt) {
   size_t json_length = strlen(ai_prompt->prompt)+strlen(ai_prompt->context)+strlen(ai_prompt->system)+256;
@@ -61,6 +61,7 @@ int send_post_request_to_ai(int sd, struct http_url* url, ai_data* ai_prompt) {
     \"system\": \"%s\",\r\n\
     \"stream\": false,\r\n\
     \"options\": {\r\n\
+     \"num_thread\": 4,\r\n\
      \"temperature\": %f\r\n\
    }\r\n\
   }\r\n\
