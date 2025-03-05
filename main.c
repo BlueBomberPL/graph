@@ -14,7 +14,6 @@ static graph_t *g_graph = NULL;
 /* Prints details */
 void *_command_tell(char **argv, int argc);
 
-
 /* CMD: For "add" command */
 /* Adds new vertex */
 void *_command_add(char **argv, int argc)
@@ -180,40 +179,55 @@ void *_command_del(char **argv, int argc)
 
     /* Number of deleted */
     size_t deleted = 0u;
+    /* Indexes of these to be deleted */
+    index_t *tab = NULL;
 
-    /* Change this *1* if TODO done */
-    for(int i = 0; i < 1; ++i)
+    if((tab = (index_t *) malloc(argc * sizeof(index_t))) == NULL)
+    {
+        msc_err("Critical memory error. Closing...");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Getting indexes from args */
+    for(int i = 0; i < argc; ++i)
     {
         index_t index = 0u;
-        size_t result = 0u;
 
         if(strcmp(argv[i], "last") == 0)
-            index = GPH_LAST;
+            tab[i] = GPH_LAST;
 
         else if(sscanf(argv[i], "%hu", &index) < 1)
         {
             msc_err("Expected positive integer or \'last\'.");
             return NULL;
         }
-
-        /* Operation */
-        result = gph_del(g_graph, index);
-
-        if(result == (size_t) -1)
-        {
-            msc_err("Critical memory error. Closing...");
-            exit(EXIT_FAILURE);
-        }
-
-        /* Wrong index */
-        else if(result == 0u && (index >= g_graph->_n && index != GPH_LAST))
+        else if(index != GPH_LAST && index >= g_graph->_n)
         {
             /* Printing info (failure) */
             char buf[GLO_MAX_MSG_OUTPUT] = {0, };
             snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "Invalid vertex index (%hu).", index);
             msc_err(buf);
         }
+        else
+            tab[i] = index;
+        
+    }
 
+    /* Deleting basing on these pointers */
+    /* Sorting descending so the indexes will always be valid */
+    qsort(tab, argc, sizeof(index_t), _gph_sort_des);
+
+    /* For each index */
+    for(int i = 0; i < argc; ++i)
+    {
+        const size_t result = gph_del(g_graph, tab[i]);
+
+            if(result == (size_t) -1)
+            {
+                msc_err("Critical memory error. Closing...");
+                exit(EXIT_FAILURE);
+            }
+        
         deleted += result;
     }
     
@@ -224,6 +238,7 @@ void *_command_del(char **argv, int argc)
         msc_inf(buf);
     }
 
+    free(tab);
     return NULL;
 }
 
@@ -507,6 +522,9 @@ void *_command_set(char **argv, int argc)
             return NULL;
         }
     }
+
+    if(index == GPH_LAST)
+        index = g_graph->_n - 1u;
 
     /* The params (should be) good */
     /* Now the target vertex can be reset */

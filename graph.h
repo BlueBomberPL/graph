@@ -136,4 +136,12 @@ void            gph_out(const graph_t *graph, FILE *stream, int settings);
  */
 void            gph_cnt(const graph_t *graph, size_t *o_single, size_t *o_double, size_t *o_isolated);
 
+
+
+/* Sorts indexes ascending */
+int             _gph_sort_asc(const void *a, const void *b);
+
+/* Sorts indexes descending */
+int             _gph_sort_des(const void *a, const void *b);
+
 #endif /* _GRAPH_GRAPH_H_FILE_ */

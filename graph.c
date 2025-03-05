@@ -6,27 +6,7 @@
  *  By Aleksander Slepowronski.
  */
 
- #include "graph.h"
-
-
-/* Internal, sorts indexes ascending */
-static int _gph_sort_asc(const void *a, const void *b)
-{
-    index_t idxa = *((index_t *) a);
-    index_t idxb = *((index_t *) b);
-
-    return ((int32_t) idxa) - ((int32_t) idxb);
-}
-
-/* Internal, sorts indexes descending */
-static int _gph_sort_des(const void *a, const void *b)
-{
-    index_t idxa = *((index_t *) a);
-    index_t idxb = *((index_t *) b);
-
-    return ((int32_t) idxb) - ((int32_t) idxa);
-}
- 
+ #include "graph.h" 
 
 /* Creates new vertex.
  *
@@ -226,7 +206,22 @@ size_t gph_del(graph_t *graph, index_t index)
             if(graph->_list[i]->_arch[j] >= index && graph->_list[i]->_arch[j] > 0u)
                 (graph->_list[i]->_arch[j])--;
         }
+
+        /* Deleting dups */
+        for(size_t j = 0u; j < graph->_list[i]->_narch; ++j)
+        {
+            for(size_t k = 0u; k < graph->_list[i]->_narch; ++k)
+            {
+                if(k == j)
+                    continue;
+
+                if(graph->_list[i]->_arch[j] == graph->_list[i]->_arch[k])
+                    gph_con(graph, i, k, GPH_DELETE);
+            }
+        }
     }
+
+    
 
     return result;
 }
@@ -257,9 +252,6 @@ size_t gph_con(graph_t *graph, index_t a, index_t b, int op)
 
     /* Validation */
     if(a >= graph->_n || b >= graph->_n)
-        return 0u;
-
-    if(a == b)
         return 0u;
 
     /* ADDING */
@@ -397,15 +389,18 @@ void gph_out(const graph_t *graph, FILE *stream, int settings)
             qsort(graph->_list[i]->_arch, graph->_list[i]->_narch, sizeof(index_t), _gph_sort_des);
 
 
-        fprintf(stream, "%32zu: [", i);
+        fprintf(stream, "%16zu: [", i);
 
         for(size_t j = 0u; j < graph->_list[i]->_narch; ++j)
         {
             /* GPH_SET_MARK_DUAL */
             if(settings & GPH_SET_MARK_DUAL && (stream == stdout || stream == stderr))
             {
-                if(gph_typ(graph, i, graph->_list[i]->_arch[j]) == GPH_TWOWAY)
+                if(i == graph->_list[i]->_arch[j])
                     col_set(MAGENTA);
+            
+                else if(gph_typ(graph, i, graph->_list[i]->_arch[j]) == GPH_TWOWAY)
+                    col_set(CYAN);
             }
             
             fprintf(stream, "%hu", graph->_list[i]->_arch[j]);
@@ -467,4 +462,24 @@ void gph_cnt(const graph_t *graph, size_t *o_single, size_t *o_double, size_t *o
 
     /* Don't count separately */
     (*o_double) /= 2u;
+}
+
+
+
+/* Sorts indexes ascending */
+int _gph_sort_asc(const void *a, const void *b)
+{
+    index_t idxa = *((index_t *) a);
+    index_t idxb = *((index_t *) b);
+
+    return ((int32_t) idxa) - ((int32_t) idxb);
+}
+
+/* Sorts indexes descending */
+int _gph_sort_des(const void *a, const void *b)
+{
+    index_t idxa = *((index_t *) a);
+    index_t idxb = *((index_t *) b);
+
+    return ((int32_t) idxb) - ((int32_t) idxa);
 }
