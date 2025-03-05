@@ -111,26 +111,27 @@ ai_data* speak_to_ollama(ai_data* ai_prompt)
     return FALSE;
   }
   memset(&msg, 0, sizeof(msg));
-  if(ai_prompt->context)
-    free(ai_prompt->context);
+
   if(ai_prompt->response)
     free(ai_prompt->response);
   if (!send_post_request_to_ai(socket, ollama_url,ai_prompt))
-  while (http_response(socket, &msg) > 0)
-      if (msg.content)
-      {
-        char* new_context = strstr(msg.content, "\"context\":");
-        new_context += 10;
-        int new_context_length = strcspn(new_context,"]") + 1;
-        char* new_response = strstr(msg.content, "\"response\":");
-        new_response += 12;
-        int new_response_length = strstr(new_response, "\"done\":") - new_response - 2;
-        ai_prompt->context = calloc(new_context_length+1,sizeof(char));
-        ai_prompt->response = calloc(new_response_length+1,sizeof(char));
-        memcpy(ai_prompt->context,new_context,new_context_length);
-        memcpy(ai_prompt->response,new_response,new_response_length);
-        break; // ugly hack to avoid http_response clogging up
-      }
+    while (http_response(socket, &msg) > 0)
+        if (msg.content)
+        {
+          if(ai_prompt->context)
+            free(ai_prompt->context);
+          char* new_context = strstr(msg.content, "\"context\":");
+          new_context += 10;
+          int new_context_length = strcspn(new_context,"]") + 1;
+          char* new_response = strstr(msg.content, "\"response\":");
+          new_response += 12;
+          int new_response_length = strstr(new_response, "\"done\":") - new_response - 2;
+          ai_prompt->context = calloc(new_context_length+1,sizeof(char));
+          ai_prompt->response = calloc(new_response_length+1,sizeof(char));
+          memcpy(ai_prompt->context,new_context,new_context_length);
+          memcpy(ai_prompt->response,new_response,new_response_length);
+          break; // ugly hack to avoid http_response clogging up
+        }
 
   free(ollama_url);
   close(socket);
