@@ -7,11 +7,11 @@ Functionality:
   - adding/deleting vertices
   - creating/deleting arches
   - editing whole vertex at once
-  - formatted printing altogether with basic info 
+  - formatted printing altogether with basic info
   - resizing/clearing graphs
   - finding arches
+  - generating by a chatbot
   - importing from files (soon)
-  - generating by a chatbot (soon)
 
 This program is really safe in terms of
 the input security - all the words are
