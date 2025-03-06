@@ -2,7 +2,8 @@
 
 // AI settings
 static const char* const ollama_ip = "127.0.0.1:11434";
-static const char* const model_name = "mistral";
+static char* model_name = "mistral";
+static bool was_model_name_malloced = FALSE;
 static const char* const prompt_header = "Convert following user input to commands (do not shorten your output), if it is a question then your list of commands should provide an answer for it:\\n";
 static const char* const default_system_prompt = "\
 You are command writer from graph generating software. \
@@ -114,6 +115,7 @@ ai_data* speak_to_ollama(ai_data* ai_prompt)
 
   if(ai_prompt->response)
     free(ai_prompt->response);
+
   if (!send_post_request_to_ai(socket, ollama_url,ai_prompt))
     while (http_response(socket, &msg) > 0)
         if (msg.content)
@@ -197,16 +199,25 @@ void* _command_ai_test(char** argv, int argc)
   return out;
 }
 
+
+void clear_stdin()
+{
+  char c;
+  while ((c = getchar()) != '\n' && c != EOF) { }
+}
+
 char* get_infinite_user_input()
 {
   size_t user_input_pointer = 0;
   size_t user_input_length = 12;
   char* user_input = calloc(user_input_length,sizeof(char));
   char input = '0';
+  // clear_stdin();
   fflush(stdin);
   while(input != '\n')
   {
     input = getc(stdin);
+    // clear_stdin();
     if((user_input_pointer+1) == user_input_length)
     {
       user_input_length *= 2;
@@ -215,15 +226,26 @@ char* get_infinite_user_input()
     if(input != '\n')
       user_input[user_input_pointer] = input;
     user_input_pointer++;
+    user_input[user_input_pointer] = '\0';
+    printf("%i %s\n",user_input_length,user_input);
   }
+  user_input[user_input_pointer] = '\0';
   return user_input;
 }
 
-void clear_stdin()
+void* _command_ai_model(char** argv, int argc)
 {
-  char c;
-  while ((c = getchar()) != '\n' && c != EOF) { }
+  puts("Please enter new model name:");
+  char* new_model_name = get_infinite_user_input();
+  if(was_model_name_malloced)
+    free(model_name);
+  model_name = new_model_name;
+  was_model_name_malloced = TRUE;
+  return NULL;
 }
+
+
+
 
 void* _command_ai(char** argv, int argc)
 {
