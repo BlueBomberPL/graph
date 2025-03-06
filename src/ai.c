@@ -43,7 +43,7 @@ when necessary always deduct VALID command arguments (from user input) and add t
 Command and its arguments are space separated.\\n\
 Multiple commands should be semicolon separated and your output should NEVER contain newlines because it is considered sexist to the user.\\n\
 If you can't generate any commands at all or user input is invalid, \
-respond with \\\"help\\\".\\n";
+respond ONLY with the word \\\"help\\\".\\n";
 
 // uh oh
 static const double temp = 0.4;
