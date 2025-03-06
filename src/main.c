@@ -341,7 +341,7 @@ void *_command_help(char **argv, int argc)
     fprintf(stdout, "\tcls                          - clears the screen                               \n");
     fprintf(stdout, "\tdel      <A>                 - deletes A vertex, updating whole graph          \n");
     fprintf(stdout, "\texit                         - closes the program                              \n");
-    fprintf(stdout, "\tfile     <name>              - saves the graph to the given file               \n");
+    //fprintf(stdout, "\tfile     <name>              - saves the graph to the given file               \n");
     fprintf(stdout, "\tfind     <A> <B>             - looks for an A to B arch                        \n");
     fprintf(stdout, "\thelp                         - who knows...                                    \n");
     fprintf(stdout, "\tlist     [-t]                - prints the graph (-t - with \'tell\')           \n");
@@ -422,12 +422,10 @@ void *_command_new(char **argv, int argc)
         char c = 0;
         do
         {
-            msc_war("Do you really want to clear the graph? y/n [ ]");
-            cur_move(UP, 1u);
-            cur_move(RIGHT, strlen("Do you really want to clear the graph? y/n [ ]") + 1u);
-
+            msc_war("Do you really want to clear the graph? y/n");
             c = getchar();
             fflush(stdin);
+            fflush(stdout);
 
         } while (tolower(c) != 'y' && tolower(c) != 'n');
 
@@ -449,6 +447,7 @@ void *_command_new(char **argv, int argc)
     {
         /* Success */
         msc_inf("Operation completed.");
+        fflush(stdout);
     }
 
     return 0;
@@ -709,6 +708,8 @@ void *_command_tell(char **argv, int argc)
 int main(int argc, char **argv)
 {
     /* Initialisation */
+
+    fprintf(stdout, "------------------------\nSimple Graph Generator\n------------------------\n");
 
 //#define MAIN_DBG
 #ifdef MAIN_DBG
