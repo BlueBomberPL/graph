@@ -37,7 +37,7 @@ static inline void msc_err(const char *msg)
 static inline void msc_war(const char *msg)
 {
     assert(msg);
-    col_set(YELLOW);
+    col_set(MAGENTA);
     fprintf(stderr, "W: ");
     col_set(COLOR_DEFAULT);
     fprintf(stderr, "%s\n", msg);

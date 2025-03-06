@@ -248,7 +248,6 @@ void *_command_del(char **argv, int argc)
 /* Closes the program */
 void *_command_exit(char **argv, int argc)
 {
-    gph_fre(g_graph);
     col_set(COLOR_DEFAULT);
     printf("\n");
     exit(EXIT_SUCCESS);
