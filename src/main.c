@@ -334,6 +334,8 @@ void *_command_help(char **argv, int argc)
     fprintf(stdout, "\tset      <A>: [B C D ...]    - updates A vertex                                \n");
     fprintf(stdout, "\tsize     <n> [-f]            - resizes the graph (-f - with force )            \n");
     fprintf(stdout, "\ttell                         - prints info about the graph                     \n");
+    fprintf(stdout, "\tai                           - opens AI prompt that can generate commands from user input\n");
+    fprintf(stdout, "\taimodel                      - changes used ollama model\n");
     fprintf(stdout, "\n");
     return NULL;
 }
@@ -731,7 +733,11 @@ int main(int argc, char **argv)
     cmd_add("arch",     _command_arch);
     cmd_add("cls",      _command_cls);
     cmd_add("del",      _command_del);
+
     cmd_add("exit",     _command_exit);
+    cmd_add("quit",     _command_exit);
+    cmd_add("q",        _command_exit);
+
     cmd_add("find",     _command_find);
     cmd_add("help",     _command_help);
     cmd_add("list",     _command_list);
@@ -741,6 +747,7 @@ int main(int argc, char **argv)
     cmd_add("tell",     _command_tell);
     cmd_add("ai",       _command_ai);
     cmd_add("aitest",   _command_ai_test);
+    cmd_add("aimodel",  _command_ai_model);
 
     /* Input loop */
     while(1)
