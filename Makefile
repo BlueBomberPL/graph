@@ -2,14 +2,24 @@
 #	MAIN MAKEFILE FOR THIS PROJECT
 #
 
-SRC 	:= $(wildcard *.c)
-FLAGS	:= -O2 -std=c11 -Wall
+SRC 	:= $(wildcard src/*.c)
+WINDOWS_FLAGS	:= -O2 -std=c11 -Wall
+LINUX_FLAGS := -pedantic -Wall
+DEBUG_FLAGS := -ggdb
 OUT		:= graph
-
-# Default: Linux build 
+CC := gcc
+# Default: Linux build
 main:
-	gcc $(SRC) $(FLAGS) -o bin/$(OUT).out"
+	$(CC) $(SRC) $(LINUX_FLAGS) -o bin/$(OUT).out
 
 # Windows build:
 win:
-	gcc $(SRC) $(FLAGS) -o bin/$(OUT).exe"
+	$(CC) $(SRC) $(WINDOWS_FLAGS) -o bin/$(OUT).exe
+
+# Debug build (with debugger flags)
+debug:
+	$(CC) $(SRC) $(LINUX_FLAGS) $(DEBUG_FLAGS) -o bin/$(OUT).out
+
+clean:
+	rm -f bin/graph.out
+	rm -f bin/graph.exe
