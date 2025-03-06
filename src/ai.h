@@ -5,6 +5,8 @@
 #include <unistd.h>
 
 #include "http.h"
+#include "command.h"
+#include "misc.h"
 
 typedef struct _ai_data
 {
@@ -23,3 +25,4 @@ ai_data* speak_to_ollama(ai_data* ai_prompt);
 bool check_if_ollama_exists();
 void* _command_ai(char** argv, int argc);
 void* _command_ai_test(char** argv, int argc);
+void* _command_ai_model(char** argv, int argc);

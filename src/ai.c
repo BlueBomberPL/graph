@@ -2,7 +2,8 @@
 
 // AI settings
 static const char* const ollama_ip = "127.0.0.1:11434";
-static const char* const model_name = "mistral";
+static char* model_name = "mistral";
+static bool was_model_name_malloced = FALSE;
 static const char* const prompt_header = "Convert following user input to commands (do not shorten your output), if it is a question then your list of commands should provide an answer for it:\\n";
 static const char* const default_system_prompt = "\
 You are command writer from graph generating software. \
@@ -43,7 +44,7 @@ when necessary always deduct VALID command arguments (from user input) and add t
 Command and its arguments are space separated.\\n\
 Multiple commands should be semicolon separated and your output should NEVER contain newlines because it is considered sexist to the user.\\n\
 If you can't generate any commands at all or user input is invalid, \
-respond with \\\"help\\\".\\n";
+respond ONLY with the single word \\\"help\\\" and then immediatelly stop interpreting anything else.\\n";
 
 // uh oh
 static const double temp = 0.4;
@@ -111,26 +112,28 @@ ai_data* speak_to_ollama(ai_data* ai_prompt)
     return FALSE;
   }
   memset(&msg, 0, sizeof(msg));
-  if(ai_prompt->context)
-    free(ai_prompt->context);
+
   if(ai_prompt->response)
     free(ai_prompt->response);
+
   if (!send_post_request_to_ai(socket, ollama_url,ai_prompt))
-  while (http_response(socket, &msg) > 0)
-      if (msg.content)
-      {
-        char* new_context = strstr(msg.content, "\"context\":");
-        new_context += 10;
-        int new_context_length = strcspn(new_context,"]") + 1;
-        char* new_response = strstr(msg.content, "\"response\":");
-        new_response += 12;
-        int new_response_length = strstr(new_response, "\"done\":") - new_response - 2;
-        ai_prompt->context = calloc(new_context_length+1,sizeof(char));
-        ai_prompt->response = calloc(new_response_length+1,sizeof(char));
-        memcpy(ai_prompt->context,new_context,new_context_length);
-        memcpy(ai_prompt->response,new_response,new_response_length);
-        break; // ugly hack to avoid http_response clogging up
-      }
+    while (http_response(socket, &msg) > 0)
+        if (msg.content)
+        {
+          if(ai_prompt->context)
+            free(ai_prompt->context);
+          char* new_context = strstr(msg.content, "\"context\":");
+          new_context += 10;
+          int new_context_length = strcspn(new_context,"]") + 1;
+          char* new_response = strstr(msg.content, "\"response\":");
+          new_response += 12;
+          int new_response_length = strstr(new_response, "\"done\":") - new_response - 2;
+          ai_prompt->context = calloc(new_context_length+1,sizeof(char));
+          ai_prompt->response = calloc(new_response_length+1,sizeof(char));
+          memcpy(ai_prompt->context,new_context,new_context_length);
+          memcpy(ai_prompt->response,new_response,new_response_length);
+          break; // ugly hack to avoid http_response clogging up
+        }
 
   free(ollama_url);
   close(socket);
@@ -196,6 +199,13 @@ void* _command_ai_test(char** argv, int argc)
   return out;
 }
 
+
+void clear_stdin()
+{
+  char c;
+  while ((c = getchar()) != '\n' && c != EOF) { }
+}
+
 char* get_infinite_user_input()
 {
   size_t user_input_pointer = 0;
@@ -214,9 +224,25 @@ char* get_infinite_user_input()
     if(input != '\n')
       user_input[user_input_pointer] = input;
     user_input_pointer++;
+    user_input[user_input_pointer] = '\0';
   }
+  user_input[user_input_pointer] = '\0';
   return user_input;
 }
+
+void* _command_ai_model(char** argv, int argc)
+{
+  puts("Please enter new model name:");
+  char* new_model_name = get_infinite_user_input();
+  if(was_model_name_malloced)
+    free(model_name);
+  model_name = new_model_name;
+  was_model_name_malloced = TRUE;
+  return NULL;
+}
+
+
+
 
 void* _command_ai(char** argv, int argc)
 {
@@ -236,16 +262,30 @@ void* _command_ai(char** argv, int argc)
 
   // remove those stupid \n which ai keeps adding to response
   char* pos;
-  while ((pos = strstr(returned_command_list, "\n")) != NULL)
-  {
+  while ((pos = strstr(returned_command_list, "\\n")) != NULL)
     memmove(pos, pos + 2, strlen(pos + 2) + 1);
-  }
 
   char* command = strtok(returned_command_list,";");
   puts("AI converted prompt to following commands:");
   while(command)
   {
     puts(command);
+    puts("Execute? (Y/N)");
+    char input = 'n';
+    fflush(stdin);
+    scanf("%c",&input);
+    clear_stdin();
+    if(input == 'Y' || input == 'y')
+      {
+        char* command_copy = malloc((strlen(command)+1)*sizeof(char));
+        // remove starting whitespaces
+        char* command_beg = command;
+        while(*command_beg == ' ')
+          command_beg++;
+        memcpy(command_copy,command_beg,strlen(command));
+        cmd_run(command_copy,0);
+        free(command_copy);
+      }
     command = strtok(NULL,";");
   }
   destroy_ai_data(user_data);
