@@ -425,7 +425,6 @@ void *_command_new(char **argv, int argc)
             msc_war("Do you really want to clear the graph? y/n");
             c = getchar();
             fflush(stdin);
-            fflush(stdout);
 
         } while (tolower(c) != 'y' && tolower(c) != 'n');
 
@@ -447,7 +446,6 @@ void *_command_new(char **argv, int argc)
     {
         /* Success */
         msc_inf("Operation completed.");
-        fflush(stdout);
     }
 
     return 0;

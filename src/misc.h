@@ -25,9 +25,9 @@ static inline void msc_err(const char *msg)
 {
     assert(msg);
     col_set(RED);
-    fprintf(stderr, "E: ");
+    fprintf(stdout, "E: ");
     col_set(COLOR_DEFAULT);
-    fprintf(stderr, "%s\n", msg);
+    fprintf(stdout, "%s\n", msg);
 }
 
 /* Prints warning to stderr.
