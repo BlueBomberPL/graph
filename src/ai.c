@@ -219,6 +219,12 @@ char* get_infinite_user_input()
   return user_input;
 }
 
+void clear_stdin()
+{
+  char c;
+  while ((c = getchar()) != '\n' && c != EOF) { }
+}
+
 void* _command_ai(char** argv, int argc)
 {
 
@@ -237,16 +243,30 @@ void* _command_ai(char** argv, int argc)
 
   // remove those stupid \n which ai keeps adding to response
   char* pos;
-  while ((pos = strstr(returned_command_list, "\n")) != NULL)
-  {
+  while ((pos = strstr(returned_command_list, "\\n")) != NULL)
     memmove(pos, pos + 2, strlen(pos + 2) + 1);
-  }
 
   char* command = strtok(returned_command_list,";");
   puts("AI converted prompt to following commands:");
   while(command)
   {
     puts(command);
+    puts("Execute? (Y/N)");
+    char input = 'n';
+    fflush(stdin);
+    scanf("%c",&input);
+    clear_stdin();
+    if(input == 'Y' || input == 'y')
+      {
+        char* command_copy = malloc((strlen(command)+1)*sizeof(char));
+        // remove starting whitespaces
+        char* command_beg = command;
+        while(*command_beg == ' ')
+          command_beg++;
+        memcpy(command_copy,command_beg,strlen(command));
+        cmd_run(command_copy,0);
+        free(command_copy);
+      }
     command = strtok(NULL,";");
   }
   destroy_ai_data(user_data);

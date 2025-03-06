@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "http.h"
+#include "command.h"
 
 typedef struct _ai_data
 {
