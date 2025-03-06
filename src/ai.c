@@ -212,12 +212,10 @@ char* get_infinite_user_input()
   size_t user_input_length = 12;
   char* user_input = calloc(user_input_length,sizeof(char));
   char input = '0';
-  // clear_stdin();
   fflush(stdin);
   while(input != '\n')
   {
     input = getc(stdin);
-    // clear_stdin();
     if((user_input_pointer+1) == user_input_length)
     {
       user_input_length *= 2;
@@ -227,7 +225,6 @@ char* get_infinite_user_input()
       user_input[user_input_pointer] = input;
     user_input_pointer++;
     user_input[user_input_pointer] = '\0';
-    printf("%i %s\n",user_input_length,user_input);
   }
   user_input[user_input_pointer] = '\0';
   return user_input;
