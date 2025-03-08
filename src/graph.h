@@ -23,7 +23,7 @@
 #define GPH_ADD                 (0x01)          /* ADD operation (on arch) */
 #define GPH_DELETE              (0x02)          /* DELETE operation (on arch) */
 
-#define GPH_LAST                ((index_t) -1) /* Last index of a graph */
+#define GPH_LAST                ((index_t) -1)  /* Last index of a graph */
 
 #define GPH_NONE                (0x00)          /* No arch */
 #define GPH_ONEWAY              (0x01)          /* One way arch (A -> B) XOR (B -> A) */
