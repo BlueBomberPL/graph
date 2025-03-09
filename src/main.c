@@ -738,8 +738,22 @@ int main(int argc, char **argv)
     printf("%zu\n", r);
 
 #else
+
     /* Atexit */
     atexit((void (*)(void))_command_exit);
+
+    /* Optional script file */
+    FILE *script = NULL;
+    if(argc > 1)
+    {
+        if((script = fopen(argv[1], "r")) == NULL)
+        {
+            msc_err("Could not load the script file.");
+            exit(EXIT_FAILURE);
+        }
+
+        msc_inf("Loaded the script file.");
+    }
 
     /* Graph */
     g_graph = gph_new(GLO_DEF_GRAPH_SIZE);
@@ -774,7 +788,19 @@ int main(int argc, char **argv)
     while(1)
     {
         char *input = NULL;
-        if((input = msc_inp()) == NULL)
+
+        /* Loading the script */
+        if(script)
+        {
+            fgets(input, GLO_MAX_USER_INPUT - 1u, script);
+            if(feof(script))
+            {
+                fclose(script);
+                script = NULL;
+            }
+        }
+
+        else if((input = msc_inp()) == NULL)
         {
             msc_err("Critical memory error. Closing...");
             exit(EXIT_FAILURE);
