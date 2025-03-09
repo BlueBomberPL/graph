@@ -413,14 +413,7 @@ void gph_out(const graph_t *graph, FILE *stream, int settings)
         }
         fprintf(stream, "]\t");
 
-        if((i + 1u) % GLO_PRINT_LINE_NUM == 0 || i == graph->_n - 1u)
-            fprintf(stream, "\n");
-        else
-        {
-            char buf[GLO_MAX_MSG_OUTPUT] = {0, };
-            snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "%%%u%s", (i + 1u) * GLO_PRINT_ALIGMENT, "");
-            fprintf(stream, buf);
-        }
+        fprintf(stream, "\n");
     }
 }
 

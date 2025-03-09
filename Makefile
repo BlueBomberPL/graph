@@ -4,10 +4,10 @@
 
 SRC 	:= $(wildcard src/*.c)
 WINDOWS_FLAGS	:= -O2 -std=c11 -Wall
-LINUX_FLAGS := -pedantic -Wall
-DEBUG_FLAGS := -ggdb
-OUT		:= graph
-CC := gcc
+LINUX_FLAGS 	:= -lm
+DEBUG_FLAGS 	:= -ggdb
+OUT				:= graph
+CC 				:= gcc
 # Default: Linux build
 main:
 	$(CC) $(SRC) $(LINUX_FLAGS) -o bin/$(OUT).out

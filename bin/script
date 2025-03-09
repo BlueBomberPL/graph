@@ -1,0 +1,6 @@
+new -f
+add
+add 0
+size 5
+add 4
+arch del last 4

@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 
 #include "command.h"
@@ -236,7 +237,7 @@ void *_command_del(char **argv, int argc)
     /* Printing info */
     {
         char buf[GLO_MAX_MSG_OUTPUT];
-        snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "Updated %u vertex(vertices).", deleted);
+        snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "Updated %zu vertex(vertices).", deleted);
         msc_inf(buf);
     }
 
@@ -248,10 +249,190 @@ void *_command_del(char **argv, int argc)
 /* Closes the program */
 void *_command_exit(char **argv, int argc)
 {
-    gph_fre(g_graph);
     col_set(COLOR_DEFAULT);
     printf("\n");
     exit(EXIT_SUCCESS);
+}
+
+/* CMD: For "file" command */
+/* Reads/writes the graph using text file */
+void *_command_file(char **argv, int argc)
+{
+    /* Validation */
+    if(argc < 1)
+    {
+        msc_err("Missing parameter.");
+        return NULL;
+    }
+
+    /* Operation mode (R/W) */
+    int is_read = 0;
+    if(strcmp(argv[0u], "in") == 0)
+        is_read = 1;
+    else if(strcmp(argv[0u], "out") == 0)
+        is_read = 0;
+    else
+    {
+        msc_err("Unknown operation parameter.");
+        return NULL;
+    }
+
+    /* File name */
+    if(argc < 2)
+    {
+        msc_err("Missing file name.");
+        return NULL;
+    }
+
+    /* Opening the file */
+    FILE *file = NULL;
+    if((file = fopen(argv[1u], is_read ? "r" : "w")) == NULL)
+    {
+        msc_err("Could not open the file.");
+        return NULL;
+    }
+
+    /* Data management */
+    if(is_read)
+    {
+        /* Calculating the graph's size */
+        index_t size = 0u;
+        int c;
+
+        /* 1) By counting lines */
+
+        do
+        {
+            c = getc(file);
+
+            if(c == EOF)
+            {
+                ++size;
+                break;
+            }
+            else if(c == '\n')
+                ++size;
+
+        } while (size < (index_t) -1);
+        
+        fseek(file, 0, SEEK_SET);
+
+        /* 2) By finding the biggest index */
+        index_t max_idx = 0u;
+
+        do
+        {
+            index_t tmp;
+            if(fscanf(file, "%hu", &tmp) < 1)
+                break;
+
+            if(tmp > max_idx)
+                max_idx = tmp;
+
+        } while (! feof(file));
+
+        /* Comparing 1) and 2) */
+        /* +1 because the biggest index is (n - 1) */
+        size = (size > max_idx + 1u) ? size : max_idx + 1u;
+        
+        /* Creating new graph */
+        gph_fre(g_graph);
+        if((g_graph = gph_new(size)) == NULL)
+        {
+            msc_err("Critical memory error. Closing...");
+            exit(EXIT_FAILURE);
+        }
+        
+        /* Initialising the vertices */
+        for(index_t i = 0u; i < size; ++i)
+        {
+            if(gph_add(g_graph, NULL) == (size_t) -1)
+            {
+                msc_err("Critical memory error. Closing...");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        fseek(file, 0, SEEK_SET);
+
+        /* # of line */
+        size_t line_n = 0u;
+
+        /* # of added arches */
+        size_t arches = 0u;
+
+        /* Reading the vertices */
+        while(! feof(file) && line_n <= (index_t) -1)
+        {
+            char line[GLO_MAX_USER_INPUT] = "";
+            char *curs = line;
+            index_t arch;
+
+            /* For each line */
+            fgets(line, GLO_MAX_USER_INPUT - 1u, file);
+            ++line_n;
+
+            /* Empty? (\n only or '-') */
+            if(strlen(line) <= 1u || line[0] == '-')
+                continue;
+
+            /* Reading all the vertices */
+            while(sscanf(curs, "%hu", &arch) == 1)
+            {
+                /* Moving the line's cursor */
+                /* by number of 'arch' digits */
+                curs += (arch == 0) ? 1 : (int)(log10(arch) + 1.0);
+
+                /* Creating a connection */
+                size_t result = gph_con(g_graph, line_n - 1u, arch, GPH_ADD);
+                if(result == (size_t) -1)
+                {
+                    /* Printing error */
+                    char buf[GLO_MAX_MSG_OUTPUT];
+                    snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "Line %zu: Could not create an arch between %zu and %u.", line_n, line_n - 1u, arch);
+                    msc_err(buf);
+                    break;
+                }
+
+                arches += result;
+            }
+        }
+
+        /* Printing results */
+        {
+            char buf[GLO_MAX_MSG_OUTPUT];
+            snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "Loaded %zu vertices and %zu arches from the file.", g_graph->_n, arches);
+            msc_inf(buf);
+        }
+    }
+
+    else
+    {
+        /* Writing data */
+
+        /* For each vertex */
+        for(index_t i = 0u; i < g_graph->_n; ++i)
+        {
+            /* Is isolated? */
+            if(g_graph->_list[i]->_narch == 0)
+            {
+                fprintf(file, "-\n");
+                continue;
+            }
+
+            /* For each arch */
+            for(index_t j = 0u; j < g_graph->_list[i]->_narch; ++j)
+            {
+                fprintf(file, "%u ", g_graph->_list[i]->_arch[j]);
+            }
+
+            if(i < g_graph->_n - 1u)
+            fprintf(file, "\n");
+        }
+    }
+
+    fclose(file);
+    return NULL;
 }
 
 /* CMD: For "find" command */
@@ -264,7 +445,6 @@ void *_command_find(char **argv, int argc)
         msc_err("Missing parameters.");
         return NULL;
     }
-
 
     index_t a = 0u, b = 0u;
     int result = 0;
@@ -342,7 +522,7 @@ void *_command_help(char **argv, int argc)
     fprintf(stdout, "\tcls                          - clears the screen                               \n");
     fprintf(stdout, "\tdel      <A>                 - deletes A vertex, updating whole graph          \n");
     fprintf(stdout, "\texit                         - closes the program                              \n");
-    fprintf(stdout, "\tfile     <name>              - saves the graph to the given file               \n");
+    fprintf(stdout, "\tfile     <in/out> <name>     - loads from/saves the graph to the given file    \n");
     fprintf(stdout, "\tfind     <A> <B>             - looks for an A to B arch                        \n");
     fprintf(stdout, "\thelp                         - who knows...                                    \n");
     fprintf(stdout, "\tlist     [-t]                - prints the graph (-t - with \'tell\')           \n");
@@ -457,8 +637,6 @@ void *_command_new(char **argv, int argc)
 #undef FLAG_FORCE
 }
 
-
-
 /* CMD: For "set" command */
 /* Changes chosen vertex */
 void *_command_set(char **argv, int argc)
@@ -572,7 +750,7 @@ void *_command_set(char **argv, int argc)
     /* Printing info (success) */
     {
         char buf[GLO_MAX_MSG_OUTPUT];
-        snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "Set %hu/%d arch(es).", added, argc - 1);
+        snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "Set %zu/%d arch(es).", added, argc - 1);
         msc_inf(buf);
     }
 
@@ -680,7 +858,7 @@ void *_command_size(char **argv, int argc)
     /* Success */
     {
         char buf[GLO_MAX_MSG_OUTPUT];
-        snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "%s %zu vertex(vertices).", ((prevs < g_graph->_n) ? "Added" : "Deleted"), abs((long long int) prevs - (long long int) g_graph->_n));
+        snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "%s %d vertex(vertices).", ((prevs < g_graph->_n) ? "Added" : "Deleted"), abs((long long int) prevs - (long long int) g_graph->_n));
         msc_inf(buf);
     }
 
@@ -773,6 +951,7 @@ int main(int argc, char **argv)
     cmd_add("quit",     _command_exit);
     cmd_add("q",        _command_exit);
 
+    cmd_add("file",     _command_file);
     cmd_add("find",     _command_find);
     cmd_add("help",     _command_help);
     cmd_add("list",     _command_list);
@@ -792,12 +971,47 @@ int main(int argc, char **argv)
         /* Loading the script */
         if(script)
         {
-            fgets(input, GLO_MAX_USER_INPUT - 1u, script);
-            if(feof(script))
+            size_t n = 1u;
+            char *line = NULL;
+
+            if((line = (char *) malloc(GLO_MAX_USER_INPUT)) == NULL)
             {
-                fclose(script);
-                script = NULL;
+                msc_err("Critical memory error. Closing...");
+                exit(EXIT_FAILURE);
             }
+            
+            while(! feof(script) && fgets(line, GLO_MAX_USER_INPUT - 1u, script) && line)
+            {
+                switch (cmd_run(line, 0))
+                {
+                case CMD_RET_ERROR:
+                {
+                    msc_err("Critical input error. Closing...");
+                    exit(EXIT_FAILURE);
+                }
+                case CMD_RET_UNKNOWN:
+                {
+                    char buf[GLO_MAX_MSG_OUTPUT] = "";
+                    snprintf(buf, GLO_MAX_MSG_OUTPUT - 1u, "Line %zu: Unknown command. Check \'help\'.", n);
+                    msc_err("Unknown command. Check \'help\'.");
+                    break;
+                }
+                case CMD_RET_SUCCESS:
+                case CMD_RET_SKIPPED:
+                {
+                    break;
+                }
+                default:
+                    break;
+                }
+
+                ++n;
+            }
+
+            fclose(script);
+            script = NULL;
+            msc_inf("Ended loading the script.");
+            continue;
         }
 
         else if((input = msc_inp()) == NULL)
